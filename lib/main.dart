@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
 }
+
+List<DriveItem> driveItems = [DriveItem(ip: "192.168.1.5", name: "win10")]; // 设备列表
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -106,6 +111,51 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+  final StreamController<List<DriveItem>> driveItemsStream = StreamController<List<DriveItem>>.broadcast();
+
+  Future<void> SearchDrive() async {
+  for (int x = 1; x <= 20; x++) {
+    for (int y = 1; y <= 20; y++) {
+      String ip = '192.168.$x.$y';
+      try {
+        print('Checking $ip...');
+        final response = await http.get(Uri.parse('http://$ip:80')).timeout(
+          const Duration(milliseconds: 120),
+          onTimeout: () {
+            throw TimeoutException('Request timed out');
+          },
+        );
+        
+        if (response.statusCode == 200) {
+          print('Found device at $ip');
+          var deviceInfo = jsonDecode(response.body);
+          driveItems.add(DriveItem(
+            ip: ip,
+            name: deviceInfo['name'] ?? 'Unknown Device',
+          ));
+          driveItemsStream.add(driveItems);
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+}
+
+
+  @override
+  void initState() {
+    super.initState();
+    driveItemsStream.add(driveItems);
+    SearchDrive();
+  }
+
+  @override
+  void dispose() {
+    driveItemsStream.close();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,16 +166,58 @@ class _SearchPageState extends State<SearchPage> {
           IconButton(
             icon: Icon(Icons.add),
             onPressed: () {
-              // 添加
+              // 添加设备
             },
           ),
         ],
       ),
-      body: Center(
-        child: Row(children: [
-          
-        ],),
-      )
+      body: StreamBuilder<List<DriveItem>>(
+        stream: driveItemsStream.stream,
+        initialData: driveItems,
+        builder: (context, snapshot) {
+          return SingleChildScrollView(
+        child: Column(
+          children: driveItems,
+        ),
+          );
+        }
+      ),
+    );
+  }
+}
+
+class DriveItem extends StatelessWidget {
+  final String ip;
+  final String name; // 设备名称
+  
+  const DriveItem({super.key, required this.ip, required this.name});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(8),
+      boxShadow: [
+        BoxShadow(
+        color: Colors.grey.withOpacity(0.2),
+        spreadRadius: 1,
+        blurRadius: 3,
+        offset: Offset(0, 2),
+        ),
+      ],
+      ),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ListTile(
+      title: Text(name),
+      subtitle: Text(ip),
+      trailing: ElevatedButton(
+        child: const Text('连接'),
+        onPressed: () {
+        // Handle connection
+        },
+      ),
+      ),
     );
   }
 }
