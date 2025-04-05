@@ -1,10 +1,29 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-void main() {
-  runApp(const MyApp());
+
+Future<void> main() async {
+ 
+  //如果size是0，则设置回调，在回调中runApp
+  if(window.physicalSize.isEmpty){
+    print("window size is zero");
+    window.onMetricsChanged = (){
+      //在回调中，size仍然有可能是0
+      if(!window.physicalSize.isEmpty){
+        window.onMetricsChanged = null;
+        print("window onMetricsChanged,run app");
+        runApp(const MyApp());
+      }
+    };
+  } else{
+    //如果size非0，则直接runApp
+    print("window load success,run app");
+    runApp(const MyApp());
+  }
 }
+
 
 List<DriveItem> driveItems = []; // 设备列表
 
@@ -132,6 +151,13 @@ class _SearchPageState extends State<SearchPage> {
           actions: [
             TextButton(
               onPressed: () {
+                // 取消操作
+                Navigator.of(context).pop();
+              },
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
                 Navigator.of(context).pop(password);
               },
               child: const Text('确定'),
@@ -150,7 +176,7 @@ class _SearchPageState extends State<SearchPage> {
       String ip = '192.168.$x.$y';
       try {
         print('Checking $ip...');
-        final response = await http.get(Uri.parse('http://$ip:80')).timeout(
+        final response = await http.get(Uri.parse('http://$ip:42309')).timeout(
           const Duration(milliseconds: 150),
           onTimeout: () {
             throw TimeoutException('Request timed out');
@@ -158,8 +184,13 @@ class _SearchPageState extends State<SearchPage> {
         );
         
         if (response.statusCode == 200) {
+          if (!response.body.contains('Kooly')){
+            setState(() {
+              is_searching = false; // 设置为搜索完成
+            });
+            return;
+          }
           print('Found device at $ip');
-          //var deviceInfo = jsonDecode(response.body); BUG 可能一直等待
           driveItems.add(DriveItem(  //BUG
             ip: ip,
             name: "Drive",
@@ -201,12 +232,6 @@ class _SearchPageState extends State<SearchPage> {
         title: Text("查找"),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () {
-              if(!is_searching){SearchDrive();}
-            }
-          ),
-          IconButton(
             icon: Icon(Icons.add),
             onPressed: () {
               // 添加设备
@@ -226,15 +251,16 @@ class _SearchPageState extends State<SearchPage> {
                     actions: [
                       TextButton(
                         onPressed: () {
-                          Navigator.of(context).pop(ip);
+                          //TODO 取消
+                          Navigator.of(context).pop();
                         },
-                        child: const Text('确定'),
+                        child: const Text('取消'),
                       ),
                       TextButton(
                         onPressed: () {
-                          //TODO 取消
+                          Navigator.of(context).pop(ip);
                         },
-                        child: const Text('取消'),
+                        child: const Text('确定'),
                       ),
                     ],
                   );
@@ -246,6 +272,12 @@ class _SearchPageState extends State<SearchPage> {
                 }
               });
             },
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              if(!is_searching){SearchDrive();}
+            }
           ),
         ],
       ),
