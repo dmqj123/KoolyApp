@@ -205,6 +205,41 @@ class _SearchPageState extends State<SearchPage> {
             icon: Icon(Icons.add),
             onPressed: () {
               // 添加设备
+              //弹出弹窗要求输入ip地址
+              showDialog(
+                context: context,
+                builder: (context) {
+                  String ip = '';
+                  return AlertDialog(
+                    title: const Text('输入IP地址'),
+                    content: TextField(
+                      onChanged: (value) {
+                        ip = value;
+                      },
+                      decoration: const InputDecoration(hintText: '请输入IP地址'),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(ip);
+                        },
+                        child: const Text('确定'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          //TODO 取消
+                        },
+                        child: const Text('取消'),
+                      ),
+                    ],
+                  );
+                },
+              ).then((ip) {
+                if (ip != null && ip.isNotEmpty) {
+                  driveItemsStream.add(driveItems);
+                  enterPassword(ip);
+                }
+              });
             },
           ),
         ],
@@ -216,12 +251,17 @@ class _SearchPageState extends State<SearchPage> {
           return SingleChildScrollView(
         child: Column(
           children: [
+            const SizedBox(height: 15),
             ...driveItems,
             if (is_searching) Center(
               child: const SizedBox(
               height: 50,
               width: 50,
               child: CircularProgressIndicator(),
+              ),
+            ) else if (driveItems.isEmpty) Center(
+              child: const Text('没有在附近找到设备', 
+              style: TextStyle(fontSize: 24, color: Colors.grey),
               ),
             ) else const SizedBox.shrink(),
           ],
