@@ -115,6 +115,34 @@ class _SearchPageState extends State<SearchPage> {
 
   bool is_searching = false; // 是否正在搜索
 
+  void enterPassword(String ip) {
+    // 弹出输入密码的对话框
+    showDialog(
+      context: context,
+      builder: (context) {
+        String password = '';
+        return AlertDialog(
+          title: const Text('输入密码'),
+          content: TextField(
+            onChanged: (value) {
+              password = value;
+            },
+            obscureText: true,
+            decoration: const InputDecoration(hintText: '请输入密码'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(password);
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> SearchDrive() async {
   is_searching = true; // 设置为正在搜索
   driveItems.clear(); // 清空设备列表
@@ -136,6 +164,9 @@ class _SearchPageState extends State<SearchPage> {
           driveItems.add(DriveItem(  //BUG
             ip: ip,
             name: "Drive",
+            on_connect: (){
+              enterPassword(ip);
+            },
           ));
           driveItemsStream.add(driveItems);
         }
@@ -184,11 +215,13 @@ class _SearchPageState extends State<SearchPage> {
         child: Column(
           children: [
             ...driveItems,
-            if (is_searching) SizedBox(
+            if (is_searching) Center(
+              child: const SizedBox(
               height: 50,
               width: 50,
               child: CircularProgressIndicator(),
-            )
+              ),
+            ) else const SizedBox.shrink(),
           ],
         ),
           );
@@ -201,8 +234,13 @@ class _SearchPageState extends State<SearchPage> {
 class DriveItem extends StatelessWidget {
   final String ip;
   final String name; // 设备名称
+  final VoidCallback on_connect; // 连接设备的回调函数
   
-  const DriveItem({super.key, required this.ip, required this.name});
+  const DriveItem({super.key, required this.ip, required this.name, required this.on_connect});
+
+  void connect() {
+    // 连接设备 TODO
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +264,8 @@ class DriveItem extends StatelessWidget {
       trailing: ElevatedButton(
         child: const Text('连接'),
         onPressed: () {
-        // Handle connection
+          // 连接设备
+          on_connect();
         },
       ),
       ),
