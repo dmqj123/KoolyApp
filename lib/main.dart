@@ -7,7 +7,7 @@ void main() {
   runApp(const MyApp());
 }
 
-List<DriveItem> driveItems = [DriveItem(ip: "192.168.1.5", name: "win10")]; // 设备列表
+List<DriveItem> driveItems = []; // 设备列表
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -113,14 +113,18 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final StreamController<List<DriveItem>> driveItemsStream = StreamController<List<DriveItem>>.broadcast();
 
+  bool is_searching = false; // 是否正在搜索
+
   Future<void> SearchDrive() async {
-  for (int x = 1; x <= 20; x++) {
-    for (int y = 1; y <= 20; y++) {
+  is_searching = true; // 设置为正在搜索
+  driveItems.clear(); // 清空设备列表
+  for (int x = 1; x <= 10; x++) {
+    for (int y = 1; y <= 18; y++) {
       String ip = '192.168.$x.$y';
       try {
         print('Checking $ip...');
         final response = await http.get(Uri.parse('http://$ip:80')).timeout(
-          const Duration(milliseconds: 120),
+          const Duration(milliseconds: 150),
           onTimeout: () {
             throw TimeoutException('Request timed out');
           },
@@ -128,10 +132,10 @@ class _SearchPageState extends State<SearchPage> {
         
         if (response.statusCode == 200) {
           print('Found device at $ip');
-          var deviceInfo = jsonDecode(response.body);
-          driveItems.add(DriveItem(
+          //var deviceInfo = jsonDecode(response.body); BUG 可能一直等待
+          driveItems.add(DriveItem(  //BUG
             ip: ip,
-            name: deviceInfo['name'] ?? 'Unknown Device',
+            name: "Drive",
           ));
           driveItemsStream.add(driveItems);
         }
@@ -140,6 +144,7 @@ class _SearchPageState extends State<SearchPage> {
       }
     }
   }
+  is_searching = false; // 设置为搜索完成
 }
 
 
@@ -177,7 +182,14 @@ class _SearchPageState extends State<SearchPage> {
         builder: (context, snapshot) {
           return SingleChildScrollView(
         child: Column(
-          children: driveItems,
+          children: [
+            ...driveItems,
+            if (is_searching) SizedBox(
+              height: 50,
+              width: 50,
+              child: CircularProgressIndicator(),
+            )
+          ],
         ),
           );
         }
@@ -191,7 +203,7 @@ class DriveItem extends StatelessWidget {
   final String name; // 设备名称
   
   const DriveItem({super.key, required this.ip, required this.name});
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
