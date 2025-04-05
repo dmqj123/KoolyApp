@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -201,6 +200,12 @@ class _SearchPageState extends State<SearchPage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text("查找"),
         actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              if(!is_searching){SearchDrive();}
+            }
+          ),
           IconButton(
             icon: Icon(Icons.add),
             onPressed: () {
