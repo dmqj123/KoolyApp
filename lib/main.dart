@@ -175,7 +175,9 @@ class _SearchPageState extends State<SearchPage> {
       }
     }
   }
-  is_searching = false; // 设置为搜索完成
+  setState(() {
+    is_searching = false; // 设置为搜索完成
+  });
 }
 
 
