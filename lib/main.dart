@@ -9,9 +9,14 @@ void main(){
   runApp(const MyApp());
 }
 
+String ?now_drive_ip;
+String ?now_drive_name;
+String ?now_drive_password;
+int ?now_drive_port;
+
 Future<bool> checkpassword(String password, String ip) async {
-  final timestamp = DateTime.now().microsecondsSinceEpoch.toString();
-  final timestampStr = timestamp.substring(0, timestamp.length - 4);
+  final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
+  final timestampStr = timestamp.substring(0, timestamp.length - 2);
   print("time:"+timestampStr);
   List<int> bytes = utf8.encode(password+timestampStr);
   var hash = md5.convert(bytes);
@@ -183,7 +188,7 @@ class _SearchPageState extends State<SearchPage> {
                 else{
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('密码错误'),
+                      content: Text('密码错误或连接错误，请重试'),
                       duration: Duration(seconds: 1),
                     ),
                   );
@@ -332,7 +337,7 @@ class _SearchPageState extends State<SearchPage> {
               width: 50,
               child: CircularProgressIndicator(),
               ),
-            ) else if (driveItems.isEmpty) Center(
+            ) else if (driveItems.isEmpty) const Center(
               child: const Text('没有在附近找到设备', 
               style: TextStyle(fontSize: 24, color: Colors.grey),
               ),
@@ -360,28 +365,29 @@ class DriveItem extends StatelessWidget {
   }
 
   Future<void> sendChatMessage(String message,String password) async {
-      final timestamp = DateTime.now().microsecondsSinceEpoch.toString();
-      final timestampStr = timestamp.substring(0, timestamp.length - 4);
-      print("time:"+timestampStr);
-      List<int> bytes = utf8.encode(password+timestampStr);
-      var hash = md5.convert(bytes);
-      var hashString = hash.toString().toUpperCase();
-      print(hashString);
-      final response = await http.get(
-        Uri.parse('http://$ip:42309/chat?hash=${hashString}'),
-        headers: {'User-Agent': 'Kooly'},
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          throw TimeoutException('Request timed out');
-        },
-      );
-      if (response.statusCode == 200) {
-      }
-       else if(response.statusCode == 401){
-      }
-      else {
-      }
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
+    final timestampStr = timestamp.substring(0, timestamp.length - 2);
+    print("time:"+timestampStr);
+    List<int> bytes = utf8.encode(password+timestampStr);
+    var hash = md5.convert(bytes);
+    var hashString = hash.toString().toUpperCase();
+    print(hashString);
+    final response = await http.get(
+      Uri.parse('http://$ip:42309/chat?hash=${hashString}?message=${message}'),
+      headers: {'User-Agent': 'Kooly'},
+    ).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        throw TimeoutException('Request timed out');
+      },
+    );
+    if (response.statusCode == 200) {
+      
+    }
+    else if(response.statusCode == 401){
+    }
+    else {
+    }
   }
 
   @override
