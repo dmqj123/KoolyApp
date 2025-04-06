@@ -22,23 +22,28 @@ Future<bool> checkpassword(String password, String ip) async {
   var hash = md5.convert(bytes);
   var hashString = hash.toString().toUpperCase();
   print(hashString);
-  final response = await http.get(
-    Uri.parse('http://$ip:42309/checkpassword?hash=${hashString}'),
-    headers: {'User-Agent': 'Kooly'},
-  ).timeout(
-    const Duration(seconds: 5),
-    onTimeout: () {
-      throw TimeoutException('Request timed out');
-    },
-  );
-  if (response.statusCode == 200) {
-    return true; // 密码正确
+  try {
+    final response = await http.get(
+      Uri.parse('http://$ip:42309/checkpassword?hash=$hashString'),
+      headers: {'User-Agent': 'Kooly'},
+    ).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        throw TimeoutException('Request timed out');
+      },
+    );
+    if (response.statusCode == 200) {
+      return true; // 密码正确
+    }
+    else if(response.statusCode == 401){
+      return false;// 密码错误
+    }
+    else {
+      return false; 
+    }
   }
-  else if(response.statusCode == 401){
-    return false;// 密码错误
-  }
-  else {
-    return false; 
+  catch (e) {
+    return false;
   }
 }
 
