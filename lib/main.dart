@@ -1,26 +1,39 @@
 import 'dart:async';
 import 'dart:ui';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+void main(){
+  runApp(const MyApp());
+}
 
-Future<void> main() async {
- 
-  //如果size是0，则设置回调，在回调中runApp
-  if(window.physicalSize.isEmpty){
-    print("window size is zero");
-    window.onMetricsChanged = (){
-      //在回调中，size仍然有可能是0
-      if(!window.physicalSize.isEmpty){
-        window.onMetricsChanged = null;
-        print("window onMetricsChanged,run app");
-        runApp(const MyApp());
-      }
-    };
-  } else{
-    //如果size非0，则直接runApp
-    print("window load success,run app");
-    runApp(const MyApp());
+Future<bool> checkpassword(String password, String ip) async {
+  final timestamp = DateTime.now().microsecondsSinceEpoch.toString();
+  final timestampStr = timestamp.substring(0, timestamp.length - 4);
+  print("time:"+timestampStr);
+  List<int> bytes = utf8.encode(password+timestampStr);
+  var hash = md5.convert(bytes);
+  var hashString = hash.toString().toUpperCase();
+  print(hashString);
+  final response = await http.get(
+    Uri.parse('http://$ip:42309/checkpassword?hash=${hashString}'),
+    headers: {'User-Agent': 'Kooly'},
+  ).timeout(
+    const Duration(seconds: 5),
+    onTimeout: () {
+      throw TimeoutException('Request timed out');
+    },
+  );
+  if (response.statusCode == 200) {
+    return true; // 密码正确
+  }
+  else if(response.statusCode == 401){
+    return false;// 密码错误
+  }
+  else {
+    return false; 
   }
 }
 
@@ -157,8 +170,25 @@ class _SearchPageState extends State<SearchPage> {
               child: const Text('取消'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(password);
+              onPressed: () async {
+                if(await checkpassword(password, ip)){
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('密码正确'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  Navigator.of(context).pop();
+                }
+                else{
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('密码错误'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                  Navigator.of(context).pop();
+                }
               },
               child: const Text('确定'),
             ),
@@ -320,11 +350,38 @@ class DriveItem extends StatelessWidget {
   final String ip;
   final String name; // 设备名称
   final VoidCallback on_connect; // 连接设备的回调函数
+  //final int port; // 设备端口
   
   const DriveItem({super.key, required this.ip, required this.name, required this.on_connect});
 
   void connect() {
     // 连接设备 TODO
+
+  }
+
+  Future<void> sendChatMessage(String message,String password) async {
+      final timestamp = DateTime.now().microsecondsSinceEpoch.toString();
+      final timestampStr = timestamp.substring(0, timestamp.length - 4);
+      print("time:"+timestampStr);
+      List<int> bytes = utf8.encode(password+timestampStr);
+      var hash = md5.convert(bytes);
+      var hashString = hash.toString().toUpperCase();
+      print(hashString);
+      final response = await http.get(
+        Uri.parse('http://$ip:42309/chat?hash=${hashString}'),
+        headers: {'User-Agent': 'Kooly'},
+      ).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          throw TimeoutException('Request timed out');
+        },
+      );
+      if (response.statusCode == 200) {
+      }
+       else if(response.statusCode == 401){
+      }
+      else {
+      }
   }
 
   @override
