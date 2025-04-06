@@ -12,7 +12,7 @@ void main(){
 String ?now_drive_ip;
 String ?now_drive_name;
 String ?now_drive_password;
-int ?now_drive_port;
+int now_drive_port = 42309;
 
 Future<bool> checkpassword(String password, String ip) async {
   final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
@@ -110,6 +110,8 @@ class _MainPageState extends State<MainPage> {
               index: pilotIndex,
               children: [
                 SearchPage(),
+                ChatPage(),
+                SettingsPage(),
               ],
             ),
             ),
@@ -120,12 +122,12 @@ class _MainPageState extends State<MainPage> {
                   label: '查找',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.home, color: (pilotIndex == 1 ? Colors.blue : Colors.black)),
+                  icon: Icon(Icons.chat, color: (pilotIndex == 1 ? Colors.blue : Colors.black)),
                   label: '聊天',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.person,color: (pilotIndex == 2 ? Colors.blue : Colors.black)),
-                  label: '我的',
+                  icon: Icon(Icons.settings,color: (pilotIndex == 2 ? Colors.blue : Colors.black)),
+                  label: '设置',
                 ),
               ],
               onTap: (index){
@@ -141,6 +143,83 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
+class SettingsPage extends StatefulWidget {
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text("设置"),
+      ),
+      body: Center(
+        child: Text(
+          '设置页面',
+          style: TextStyle(fontSize: 24),
+        ),
+      ),
+    );
+  }
+}
+
+class ChatPage extends StatefulWidget {
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      title: Text("聊天"),
+      ),
+      body: Column(
+      children: <Widget>[
+        Expanded(
+        child: Center(
+          child: Text(
+          now_drive_name == null ? "未连接设备" : now_drive_name!,
+          style: TextStyle(fontSize: 35, color: Colors.black),
+          ),
+        ),
+        ),
+        Container(
+        padding: EdgeInsets.all(8.0),
+        child: Row(
+          children: [
+          Expanded(
+            child: TextField(
+            decoration: InputDecoration(
+              hintText: '输入消息...',
+              border: OutlineInputBorder(),
+            ),
+            ),
+          ),
+          SizedBox(width: 8.0),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: 处理发送消息
+            },
+            style: ElevatedButton.styleFrom(
+              minimumSize: Size(80, 50),
+            ),
+            child: Text('发送'),
+          ),
+          ],
+        ),
+        ),
+      ],
+      ),
+    );
+  }
+}
+
 class SearchPage extends StatefulWidget {
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -151,7 +230,8 @@ class _SearchPageState extends State<SearchPage> {
 
   bool is_searching = false; // 是否正在搜索
 
-  void enterPassword(String ip) {
+  void enterPassword(DriveItem driveItem) async {
+    String ip = driveItem.ip;
     // 弹出输入密码的对话框
     showDialog(
       context: context,
@@ -177,13 +257,17 @@ class _SearchPageState extends State<SearchPage> {
             TextButton(
               onPressed: () async {
                 if(await checkpassword(password, ip)){
-                    ScaffoldMessenger.of(context).showSnackBar(
+                  Navigator.of(context).pop();
+                  driveItem.connect(password);
+                  ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('密码正确'),
+                        content: Text('连接成功'),
                         duration: Duration(seconds: 1),
                       ),
-                    );
-                  Navigator.of(context).pop();
+                  );
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => ChatPage(),
+                  ));
                 }
                 else{
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -236,7 +320,7 @@ class _SearchPageState extends State<SearchPage> {
             ip: ip,
             name: deviceName,
             on_connect: (){
-            enterPassword(ip);
+              enterPassword(DriveItem(ip: ip,name: deviceName, on_connect: (){}));
             },
           ));
           driveItemsStream.add(driveItems);
@@ -318,6 +402,9 @@ class _SearchPageState extends State<SearchPage> {
             icon: Icon(Icons.refresh),
             onPressed: () {
               if(!is_searching){SearchDrive();}
+              setState(() {
+                is_searching = true; // 设置为正在搜索
+              });
             }
           ),
         ],
@@ -359,8 +446,11 @@ class DriveItem extends StatelessWidget {
   
   const DriveItem({super.key, required this.ip, required this.name, required this.on_connect});
 
-  void connect() {
+  void connect(String password) {
     // 连接设备 TODO
+    now_drive_ip = ip;
+    now_drive_name = name;
+    now_drive_password = password;
 
   }
 
