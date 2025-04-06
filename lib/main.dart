@@ -115,7 +115,7 @@ class _MainPageState extends State<MainPage> {
               index: pilotIndex,
               children: [
                 SearchPage(),
-                ChatPage(),
+                //ChatPage(),
                 SettingsPage(),
               ],
             ),
@@ -126,10 +126,12 @@ class _MainPageState extends State<MainPage> {
                   icon: Icon(Icons.search, color: (pilotIndex == 0 ? Colors.blue : Colors.black)),
                   label: '查找',
                 ),
+                /*
                 BottomNavigationBarItem(
                   icon: Icon(Icons.chat, color: (pilotIndex == 1 ? Colors.blue : Colors.black)),
                   label: '聊天',
                 ),
+                */
                 BottomNavigationBarItem(
                   icon: Icon(Icons.settings,color: (pilotIndex == 2 ? Colors.blue : Colors.black)),
                   label: '设置',
@@ -172,6 +174,7 @@ class _SettingsPageState extends State<SettingsPage> {
 }
 
 class ChatPage extends StatefulWidget {
+  bool hogh_level_mode = false; // 高级模式
   @override
   State<ChatPage> createState() => _ChatPageState();
 }
@@ -206,7 +209,20 @@ class _ChatPageState extends State<ChatPage> {
             ),
             ),
           ),
-          SizedBox(width: 8.0),
+          SizedBox(width: 0),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                widget.hogh_level_mode = !widget.hogh_level_mode;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              shape: CircleBorder(),
+              minimumSize: Size(50, 50),
+              backgroundColor: widget.hogh_level_mode ? Colors.blue : null,
+            ),
+            child: Icon(Icons.offline_bolt),
+          ),
           ElevatedButton(
             onPressed: () {
               // TODO: 处理发送消息
@@ -411,6 +427,9 @@ class _SearchPageState extends State<SearchPage> {
                 is_searching = true; // 设置为正在搜索
               });
             }
+          ),
+          IconButton(
+            onPressed: (){}, icon: Icon(Icons.qr_code_scanner), // 扫描二维码
           ),
         ],
       ),
