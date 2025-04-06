@@ -176,7 +176,10 @@ class _SearchPageState extends State<SearchPage> {
       String ip = '192.168.$x.$y';
       try {
         print('Checking $ip...');
-        final response = await http.get(Uri.parse('http://$ip:42309')).timeout(
+        final response = await http.get(
+          Uri.parse('http://$ip:42309'),
+          headers: {'User-Agent': 'Kooly'},
+        ).timeout(
           const Duration(milliseconds: 150),
           onTimeout: () {
             throw TimeoutException('Request timed out');
@@ -188,14 +191,17 @@ class _SearchPageState extends State<SearchPage> {
             setState(() {
               is_searching = false; // 设置为搜索完成
             });
-            return;
+            continue;
           }
           print('Found device at $ip');
-          driveItems.add(DriveItem(  //BUG
+          var deviceName = response.body.contains('"name":"') 
+            ? response.body.split('"name":"')[1].split('"')[0]
+            : "Drive";
+          driveItems.add(DriveItem(
             ip: ip,
-            name: "Drive",
+            name: deviceName,
             on_connect: (){
-              enterPassword(ip);
+            enterPassword(ip);
             },
           ));
           driveItemsStream.add(driveItems);
