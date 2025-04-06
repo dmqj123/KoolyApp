@@ -82,14 +82,12 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Expanded(child: 
-        IndexedStack(
-        index: senceIndex,
-        children: const [
-          MainPage(),
-        ],
-      ),
-      ),
+      body: IndexedStack(
+      index: senceIndex,
+      children: const [
+        MainPage(),
+      ],
+    ),
     );
   }
 }
@@ -525,10 +523,7 @@ class DriveItem extends StatelessWidget {
       subtitle: Text(ip),
       trailing: ElevatedButton(
         child: const Text('连接'),
-        onPressed: () {
-          // 连接设备
-          on_connect();
-        },
+        onPressed: on_connect,
       ),
       ),
     );
