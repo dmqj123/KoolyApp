@@ -17,11 +17,11 @@ int now_drive_port = 42309;
 Future<bool> checkpassword(String password, String ip) async {
   final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
   final timestampStr = timestamp.substring(0, timestamp.length - 2);
-  print("time:"+timestampStr);
+
   List<int> bytes = utf8.encode(password+timestampStr);
   var hash = md5.convert(bytes);
   var hashString = hash.toString().toUpperCase();
-  print(hashString);
+
   try {
     final response = await http.get(
       Uri.parse('http://$ip:42309/checkpassword?hash=$hashString'),
@@ -239,6 +239,8 @@ class _ChatPageState extends State<ChatPage> {
   }
 }
 
+int search_y = 0;
+
 class SearchPage extends StatefulWidget {
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -309,44 +311,43 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> SearchDrive() async {
   is_searching = true; // 设置为正在搜索
   driveItems.clear(); // 清空设备列表
-  for (int x = 1; x <= 10; x++) {
-    for (int y = 1; y <= 18; y++) {
-      String ip = '192.168.$x.$y';
-      try {
-        print('Checking $ip...');
-        final response = await http.get(
-          Uri.parse('http://$ip:42309'),
-          headers: {'User-Agent': 'Kooly'},
-        ).timeout(
-          const Duration(milliseconds: 150),
-          onTimeout: () {
-            throw TimeoutException('Request timed out');
-          },
-        );
-        
-        if (response.statusCode == 200) {
-          if (!response.body.contains('Kooly')){
-            setState(() {
-              is_searching = false; // 设置为搜索完成
-            });
-            continue;
-          }
-          print('Found device at $ip');
-          var deviceName = response.body.contains('"name":"') 
-            ? response.body.split('"name":"')[1].split('"')[0]
-            : "Drive";
-          driveItems.add(DriveItem(
-            ip: ip,
-            name: deviceName,
-            on_connect: (){
-              enterPassword(DriveItem(ip: ip,name: deviceName, on_connect: (){}));
-            },
-          ));
-          driveItemsStream.add(driveItems);
+  for (search_y = 0; search_y <= 260; search_y++) {
+    String ip = '192.168.3.$search_y';
+    try {
+      print('Checking $ip...');
+      final response = await http.get(
+        Uri.parse('http://$ip:42309'),
+        headers: {'User-Agent': 'Kooly'},
+      ).timeout(
+        const Duration(milliseconds: 130),
+        onTimeout: () {
+          throw TimeoutException('Request timed out');
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        if (!response.body.contains('Kooly')){
+          setState(() {
+            is_searching = false; // 设置为搜索完成
+          });
+          continue;
         }
-      } catch (e) {
-        continue;
+        print('Found device at $ip');
+        var deviceName = response.body.contains('"name":"') 
+          ? response.body.split('"name":"')[1].split('"')[0]
+          : "Drive";
+        driveItems.add(DriveItem(
+          ip: ip,
+          name: deviceName,
+          on_connect: (){
+            search_y = 259;
+            enterPassword(DriveItem(ip: ip,name: deviceName, on_connect: (){}));
+          },
+        ));
+        driveItemsStream.add(driveItems);
       }
+    } catch (e) {
+      continue;
     }
   }
   setState(() {
@@ -420,7 +421,7 @@ class _SearchPageState extends State<SearchPage> {
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () {
-              if(!is_searching){SearchDrive();}
+              if(!is_searching){SearchDrive();}else{search_y = 0;}
               setState(() {
                 is_searching = true; // 设置为正在搜索
               });
@@ -479,11 +480,11 @@ class DriveItem extends StatelessWidget {
   Future<void> sendChatMessage(String message,String password) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
     final timestampStr = timestamp.substring(0, timestamp.length - 2);
-    print("time:"+timestampStr);
+
     List<int> bytes = utf8.encode(password+timestampStr);
     var hash = md5.convert(bytes);
     var hashString = hash.toString().toUpperCase();
-    print(hashString);
+
     final response = await http.get(
       Uri.parse('http://$ip:42309/chat?hash=${hashString}?message=${message}'),
       headers: {'User-Agent': 'Kooly'},
