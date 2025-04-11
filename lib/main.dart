@@ -178,6 +178,7 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
+  TextEditingController _messageController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -201,10 +202,11 @@ class _ChatPageState extends State<ChatPage> {
           children: [
           Expanded(
             child: TextField(
-            decoration: InputDecoration(
-              hintText: '输入消息...',
-              border: OutlineInputBorder(),
-            ),
+              controller: _messageController,
+              decoration: const InputDecoration(
+                hintText: '输入消息...',
+                border: OutlineInputBorder(),
+              ),
             ),
           ),
           SizedBox(width: 0),
@@ -224,12 +226,14 @@ class _ChatPageState extends State<ChatPage> {
           ElevatedButton(
             onPressed: () {
               // TODO: 处理发送消息
+              DriveItem(ip: now_drive_ip ?? "", name: now_drive_name ?? "", on_connect: (){},).sendChatMessage(_messageController.text, now_drive_password ?? "");
             },
             style: ElevatedButton.styleFrom(
               minimumSize: Size(80, 50),
             ),
             child: Text('发送'),
           ),
+          
           ],
         ),
         ),
@@ -474,7 +478,6 @@ class DriveItem extends StatelessWidget {
     now_drive_ip = ip;
     now_drive_name = name;
     now_drive_password = password;
-
   }
 
   Future<void> sendChatMessage(String message,String password) async {
