@@ -9,10 +9,19 @@ void main(){
   runApp(const MyApp());
 }
 
+String ai_answer = "";
+
 String ?now_drive_ip;
 String ?now_drive_name;
 String ?now_drive_password;
 int now_drive_port = 42309;
+
+AiApiInfo aiApiInfo = AiApiInfo();
+
+class AiApiInfo {
+  String ?api_key;
+  String ?api_url;
+}
 
 Future<bool> checkpassword(String password, String ip) async {
   final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
@@ -177,9 +186,62 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-String ?ai_answer = "你好，我是Koooly";
-
 class _ChatPageState extends State<ChatPage> {
+  Future<void> send_message(String url,String key,String question,String port) async {
+  final client = http.Client();
+  try {
+    final requestBody = {
+      "model": "deepseek-chat",
+      "messages": [
+        {"role": "user", "content": question},
+        {"role": "system", "content": port}
+      ],
+      "stream": true, // 启用流式传输
+      "max_tokens": 600,
+      "temperature": 1.3,
+    };
+
+    final request = http.Request('POST', Uri.parse(url))
+      ..headers.addAll({
+        'Authorization': 'Bearer $key',
+        'Content-Type': 'application/json',
+      })
+      ..body = jsonEncode(requestBody);
+
+    final response = await client.send(request);
+    
+    if (response.statusCode != 200) {
+      throw Exception('请求失败: ${response.statusCode}');
+    }
+
+    final stream = response.stream
+        .transform(utf8.decoder)
+        .transform(const LineSplitter());
+
+    await for (final line in stream) {
+      if (line.isEmpty) continue;
+      if (line.startsWith('data: ')) {
+        final data = line.substring(6);
+        if (data == '[DONE]') break;
+        
+        try {
+          final jsonResponse = jsonDecode(data);
+          final content = jsonResponse['choices'][0]['delta']['content'];
+          if (content != null) {
+            ai_answer += content;
+            setState(() {
+              
+            });
+          }
+        } catch (e) {
+          print('解析错误: $e');
+        }
+      }
+    }
+  } finally {
+    client.close();
+  }
+}
   TextEditingController _messageController = TextEditingController();
   @override
   Widget build(BuildContext context) {
@@ -244,14 +306,30 @@ class _ChatPageState extends State<ChatPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              // TODO: 处理发送消息
-              DriveItem(ip: now_drive_ip ?? "", name: now_drive_name ?? "", on_connect: (){},).sendChatMessage(_messageController.text, now_drive_password ?? "");
+              print("key:"+aiApiInfo.api_key! + "\nurl:"+aiApiInfo.api_url! + "\n");
+              if ((aiApiInfo.api_url?.isNotEmpty ?? false) && 
+                  (aiApiInfo.api_key?.isNotEmpty ?? false)) {
+                send_message(
+                  aiApiInfo.api_url!,
+                  aiApiInfo.api_key!,
+                  _messageController.text,
+                  "你是一个叫做Kooly的智能助手"
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('请先完成设备连接配置'),
+                    duration: Duration(seconds: 1), // 添加持续时间参数
+                  )
+                );
+
+              }
             },
             style: ElevatedButton.styleFrom(
               minimumSize: Size(80, 50),
             ),
             child: Text('发送'),
-          ),
+          )
           ],
         ),
         ),
@@ -333,43 +411,44 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> SearchDrive() async {
   is_searching = true; // 设置为正在搜索
   driveItems.clear(); // 清空设备列表
-  for (search_y = 0; search_y <= 260; search_y++) {
-    String ip = '192.168.3.$search_y';
-    try {
-      print('Checking $ip...');
-      final response = await http.get(
-        Uri.parse('http://$ip:42309'),
-        headers: {'User-Agent': 'Kooly'},
-      ).timeout(
-        const Duration(milliseconds: 130),
-        onTimeout: () {
-          throw TimeoutException('Request timed out');
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        if (!response.body.contains('Kooly')){
-          setState(() {
-            is_searching = false; // 设置为搜索完成
-          });
-          continue;
-        }
-        print('Found device at $ip');
-        var deviceName = response.body.contains('"name":"') 
-          ? response.body.split('"name":"')[1].split('"')[0]
-          : "Drive";
-        driveItems.add(DriveItem(
-          ip: ip,
-          name: deviceName,
-          on_connect: (){
-            search_y = 259;
-            enterPassword(DriveItem(ip: ip,name: deviceName, on_connect: (){}));
+  for (int x = 1; x <= 10; x++) {
+    for (search_y = 1; search_y <= 18; search_y++) {
+      String ip = '192.168.$x.$search_y';
+      try {
+        print('Checking $ip...');
+        final response = await http.get(
+          Uri.parse('http://$ip:42309'),
+          headers: {'User-Agent': 'Kooly'},
+        ).timeout(
+          const Duration(milliseconds: 150),
+          onTimeout: () {
+            throw TimeoutException('Request timed out');
           },
-        ));
-        driveItemsStream.add(driveItems);
+        );
+        
+        if (response.statusCode == 200) {
+          if (!response.body.contains('Kooly')){
+            setState(() {
+              is_searching = false; // 设置为搜索完成
+            });
+            continue;
+          }
+          print('Found device at $ip');
+          var deviceName = response.body.contains('"name":"') 
+            ? response.body.split('"name":"')[1].split('"')[0]
+            : "Drive";
+          driveItems.add(DriveItem(
+            ip: ip,
+            name: deviceName,
+            on_connect: (){
+              enterPassword(DriveItem(ip: ip,name: deviceName, on_connect: (){}));
+            },
+          ));
+          driveItemsStream.add(driveItems);
+        }
+      } catch (e) {
+        continue;
       }
-    } catch (e) {
-      continue;
     }
   }
   setState(() {
@@ -463,7 +542,7 @@ class _SearchPageState extends State<SearchPage> {
           children: [
             const SizedBox(height: 15),
             ...driveItems,
-            if (is_searching) Center(
+            if (is_searching) const Center(
               child: const SizedBox(
               height: 50,
               width: 50,
@@ -491,14 +570,12 @@ class DriveItem extends StatelessWidget {
   
   const DriveItem({super.key, required this.ip, required this.name, required this.on_connect});
 
-  void connect(String password) {
+  Future<void> connect(String password) async {
     // 连接设备 TODO
     now_drive_ip = ip;
     now_drive_name = name;
     now_drive_password = password;
-  }
 
-  Future<void> sendChatMessage(String message,String password) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
     final timestampStr = timestamp.substring(0, timestamp.length - 2);
 
@@ -507,7 +584,7 @@ class DriveItem extends StatelessWidget {
     var hashString = hash.toString().toUpperCase();
 
     final response = await http.get(
-      Uri.parse('http://$ip:42309/chat?hash=${hashString}?message=${message}'),
+      Uri.parse('http://$ip:42309/get_apiinfo?hash=${hashString}'),
       headers: {'User-Agent': 'Kooly'},
     ).timeout(
       const Duration(seconds: 5),
@@ -515,8 +592,13 @@ class DriveItem extends StatelessWidget {
         throw TimeoutException('Request timed out');
       },
     );
+    print(response.statusCode);
     if (response.statusCode == 200) {
-      
+      //获取请求体里面的url和key字段
+      var responseBody = json.decode(response.body);
+      aiApiInfo.api_key = responseBody['key'];
+      aiApiInfo.api_url = responseBody['url'];
+      print("原始响应: ${response.body}"); // 添加在解析前
     }
     else if(response.statusCode == 401){
     }
