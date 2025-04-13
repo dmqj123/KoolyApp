@@ -177,6 +177,8 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
+String ?ai_answer = "你好，我是Koooly";
+
 class _ChatPageState extends State<ChatPage> {
   TextEditingController _messageController = TextEditingController();
   @override
@@ -195,6 +197,23 @@ class _ChatPageState extends State<ChatPage> {
           style: TextStyle(fontSize: 35, color: Colors.black),
           ),
         ),
+        ),
+        Card(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: RichText(
+                text: TextSpan(
+                  text: "Kooly: "+(ai_answer ?? ""),
+                  style: const TextStyle(
+                    fontSize: 35,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            )
+          )
         ),
         Container(
         padding: EdgeInsets.all(8.0),
@@ -233,7 +252,6 @@ class _ChatPageState extends State<ChatPage> {
             ),
             child: Text('发送'),
           ),
-          
           ],
         ),
         ),
