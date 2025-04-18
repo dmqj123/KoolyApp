@@ -310,30 +310,21 @@ class _ChatPageState extends State<ChatPage> {
         ),
         ),
         Card(
-          child: /** 左对齐布局组件，使用Alignment.centerLeft确保内容左对齐 */
-          Align(
-            alignment: Alignment.centerLeft,
-            child: /** 添加8像素全方向内边距 */
-            Padding(
-              padding: EdgeInsets.all(8.0),
-              child: /** 滚动视图容器，使用ClampingScrollPhysics获得无弹性滚动效果 */
-              SingleChildScrollView(
-                physics: ClampingScrollPhysics(),
-                child: ConstrainedBox(  // 添加约束容器
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width, // 限制最大宽度
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              //maxWidth: MediaQuery.of(context).size.width * 0.9,
+              maxHeight: MediaQuery.of(context).size.height * 0.5 // 添加最大高度约束
+            ),
+            child: SingleChildScrollView(
+              physics: ClampingScrollPhysics(),
+              child: RichText(
+                text: TextSpan(
+                  text: "Kooly: " + (ai_answer ?? "..."),  // 拼接固定前缀与动态回答内容
+                  style: const TextStyle(
+                    fontSize: 35,      // 设置字体大小
+                    color: Colors.black, // 设置文本颜色
                   ),
-                  child: RichText(
-                    text: TextSpan(
-                      text: "Kooly: " + (ai_answer ?? "..."),  // 拼接固定前缀与动态回答内容
-                      style: const TextStyle(
-                        fontSize: 35,      // 设置字体大小
-                        color: Colors.black, // 设置文本颜色
-                      ),
-                    ),
-                    softWrap: true,
-                  ),
-                )
+                ),
               ),
             )
           )
