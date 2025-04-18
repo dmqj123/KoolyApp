@@ -23,17 +23,58 @@ class AiApiInfo {
   String ?api_url;
 }
 
+String vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 2);
+int vcn_uses = 0; //校验码使用情况
+
 Future<bool> checkpassword(String password, String ip) async {
   final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
   final timestampStr = timestamp.substring(0, timestamp.length - 2);
 
-  List<int> bytes = utf8.encode(password+timestampStr);
-  var hash = md5.convert(bytes);
-  var hashString = hash.toString().toUpperCase();
+  if(timestampStr != vcn_number_time){
+    vcn_uses = 0;
+    vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 2);
+  }
+  else{
+    vcn_uses += 1;
+  }
+
+  String hashString = md5.convert(utf8.encode(password+timestampStr)).toString().toUpperCase();
+
+  String vc_number ="00";
+
+  //匹配vcn_uses
+  switch (vcn_uses){
+    case 0:
+      vc_number = "00";
+      break;
+    case 1:
+      vc_number = "01";
+      break;
+    case 2:
+      vc_number = "02";
+      break;
+    case 3:
+      vc_number = "03";
+      break;
+    case 4:
+      vc_number = "04";
+      break;
+    case 5:
+      vc_number = "05";
+      break;
+    case 6:
+      vc_number = "06";
+      break;
+    default:
+      vc_number = "0000";
+      break;
+  }
+
+  String verification_code = md5.convert(utf8.encode(password+timestampStr+vc_number)).toString().toUpperCase();
 
   try {
     final response = await http.get(
-      Uri.parse('http://$ip:42309/checkpassword?hash=$hashString'),
+      Uri.parse('http://$ip:42309/checkpassword?hash=$hashString&verification-code=$verification_code'),
       headers: {'User-Agent': 'Kooly'},
     ).timeout(
       const Duration(seconds: 5),
@@ -187,60 +228,68 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
+  bool is_asking = false;
   Future<void> send_message(String url,String key,String question,String port) async {
-  final client = http.Client();
-  try {
-    final requestBody = {
-      "model": "deepseek-chat",
-      "messages": [
-        {"role": "user", "content": question},
-        {"role": "system", "content": port}
-      ],
-      "stream": true, // 启用流式传输
-      "max_tokens": 600,
-      "temperature": 1.3,
-    };
-
-    final request = http.Request('POST', Uri.parse(url))
-      ..headers.addAll({
-        'Authorization': 'Bearer $key',
-        'Content-Type': 'application/json',
-      })
-      ..body = jsonEncode(requestBody);
-
-    final response = await client.send(request);
-    
-    if (response.statusCode != 200) {
-      throw Exception('请求失败: ${response.statusCode}');
-    }
-
-    final stream = response.stream
-        .transform(utf8.decoder)
-        .transform(const LineSplitter());
-
-    await for (final line in stream) {
-      if (line.isEmpty) continue;
-      if (line.startsWith('data: ')) {
-        final data = line.substring(6);
-        if (data == '[DONE]') break;
-        
-        try {
-          final jsonResponse = jsonDecode(data);
-          final content = jsonResponse['choices'][0]['delta']['content'];
-          if (content != null) {
-            ai_answer += content;
-            setState(() {
-              
-            });
+    is_asking = true;
+    final client = http.Client();
+    try {
+      final requestBody = {
+        "model": "deepseek-chat",
+        "messages": [
+          {"role": "user", "content": question},
+          {"role": "system", "content": port}
+        ],
+        "stream": true, // 启用流式传输
+        "max_tokens": 600,
+        "temperature": 1.3,
+      };
+  
+      final request = http.Request('POST', Uri.parse(url))
+        ..headers.addAll({
+          'Authorization': 'Bearer $key',
+          'Content-Type': 'application/json',
+        })
+        ..body = jsonEncode(requestBody);
+  
+      final response = await client.send(request);
+      
+      if (response.statusCode != 200) {
+        throw Exception('请求失败: ${response.statusCode}');
+      }
+  
+      final stream = response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
+  
+      await for (final line in stream) {
+        if (line.isEmpty) continue;
+        if (line.startsWith('data: ')) {
+          final data = line.substring(6);
+          if (data == '[DONE]') break;
+          
+          try {
+            final jsonResponse = jsonDecode(data);
+            final content = jsonResponse['choices'][0]['delta']['content'];
+            if (content != null) {
+              if(!is_asking){
+                return;
+              }
+              ai_answer += content;
+              setState(() {
+                
+              });
+            }
+          } catch (e) {
+            print('解析错误: $e');
           }
-        } catch (e) {
-          print('解析错误: $e');
         }
       }
+    } finally {
+      client.close();
+      setState(() {
+        is_asking = false;
+      });
     }
-  } finally {
-    client.close();
-  }
 }
   TextEditingController _messageController = TextEditingController();
   @override
@@ -261,18 +310,30 @@ class _ChatPageState extends State<ChatPage> {
         ),
         ),
         Card(
-          child: Align(
+          child: /** 左对齐布局组件，使用Alignment.centerLeft确保内容左对齐 */
+          Align(
             alignment: Alignment.centerLeft,
-            child: Padding(
+            child: /** 添加8像素全方向内边距 */
+            Padding(
               padding: EdgeInsets.all(8.0),
-              child: RichText(
-                text: TextSpan(
-                  text: "Kooly: "+(ai_answer ?? ""),
-                  style: const TextStyle(
-                    fontSize: 35,
-                    color: Colors.black,
+              child: /** 滚动视图容器，使用ClampingScrollPhysics获得无弹性滚动效果 */
+              SingleChildScrollView(
+                physics: ClampingScrollPhysics(),
+                child: ConstrainedBox(  // 添加约束容器
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width, // 限制最大宽度
                   ),
-                ),
+                  child: RichText(
+                    text: TextSpan(
+                      text: "Kooly: " + (ai_answer ?? "..."),  // 拼接固定前缀与动态回答内容
+                      style: const TextStyle(
+                        fontSize: 35,      // 设置字体大小
+                        color: Colors.black, // 设置文本颜色
+                      ),
+                    ),
+                    softWrap: true,
+                  ),
+                )
               ),
             )
           )
@@ -306,18 +367,29 @@ class _ChatPageState extends State<ChatPage> {
           ),
           ElevatedButton(
             onPressed: () {
+              if(is_asking){
+                setState(() {
+                  is_asking = false;
+                });
+                return;
+              }
               print("key:"+aiApiInfo.api_key! + "\nurl:"+aiApiInfo.api_url! + "\n");
               if ((aiApiInfo.api_url?.isNotEmpty ?? false) && 
                   (aiApiInfo.api_key?.isNotEmpty ?? false)) {
+                ai_answer = "";
+                is_asking = true;
                 send_message(
                   aiApiInfo.api_url!,
                   aiApiInfo.api_key!,
                   _messageController.text,
                   "你是一个叫做Kooly的智能助手"
                 );
+                setState(() {
+                  //_messageController.text = "";
+                });
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text('请先完成设备连接配置'),
                     duration: Duration(seconds: 1), // 添加持续时间参数
                   )
@@ -328,7 +400,7 @@ class _ChatPageState extends State<ChatPage> {
             style: ElevatedButton.styleFrom(
               minimumSize: Size(80, 50),
             ),
-            child: Text('发送'),
+            child: Text(is_asking ? "停止" : "发送"),
           )
           ],
         ),
@@ -377,9 +449,8 @@ class _SearchPageState extends State<SearchPage> {
             ),
             TextButton(
               onPressed: () async {
-                if(await checkpassword(password, ip)){
+                if(await driveItem.connect(password)==200){
                   Navigator.of(context).pop();
-                  driveItem.connect(password);
                   ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('连接成功'),
@@ -513,8 +584,8 @@ class _SearchPageState extends State<SearchPage> {
                 },
               ).then((ip) {
                 if (ip != null && ip.isNotEmpty) {
-                  driveItemsStream.add(driveItems);
-                  enterPassword(ip);
+                  //driveItemsStream.add(driveItems);
+                  enterPassword(DriveItem(ip: ip, name: "未知设备", on_connect: (){}));
                 }
               });
             },
@@ -570,7 +641,7 @@ class DriveItem extends StatelessWidget {
   
   const DriveItem({super.key, required this.ip, required this.name, required this.on_connect});
 
-  Future<void> connect(String password) async {
+  Future<int> connect(String password) async {
     // 连接设备 TODO
     now_drive_ip = ip;
     now_drive_name = name;
@@ -579,12 +650,49 @@ class DriveItem extends StatelessWidget {
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
     final timestampStr = timestamp.substring(0, timestamp.length - 2);
 
-    List<int> bytes = utf8.encode(password+timestampStr);
-    var hash = md5.convert(bytes);
-    var hashString = hash.toString().toUpperCase();
+    if(timestampStr != vcn_number_time){
+      vcn_uses = 0;
+      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 2);
+    }
+    else{
+      vcn_uses += 1;
+    }
 
+    String hashString = md5.convert(utf8.encode(password+timestampStr)).toString().toUpperCase();
+
+    String vc_number ="00";
+
+    //匹配vcn_uses
+    switch (vcn_uses){
+      case 0:
+        vc_number = "00";
+        break;
+      case 1:
+        vc_number = "01";
+        break;
+      case 2:
+        vc_number = "02";
+        break;
+      case 3:
+        vc_number = "03";
+        break;
+      case 4:
+        vc_number = "04";
+        break;
+      case 5:
+        vc_number = "05";
+        break;
+      case 6:
+        vc_number = "06";
+        break;
+      default:
+        vc_number = "0000";
+        break;
+    }
+
+  String verification_code = md5.convert(utf8.encode(password+timestampStr+vc_number)).toString().toUpperCase();
     final response = await http.get(
-      Uri.parse('http://$ip:42309/get_apiinfo?hash=${hashString}'),
+      Uri.parse('http://$ip:42309/get_apiinfo?hash=${hashString}&verification-code=$verification_code'),
       headers: {'User-Agent': 'Kooly'},
     ).timeout(
       const Duration(seconds: 5),
@@ -604,6 +712,7 @@ class DriveItem extends StatelessWidget {
     }
     else {
     }
+    return response.statusCode;
   }
 
   @override
