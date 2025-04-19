@@ -229,6 +229,72 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   bool is_asking = false;
+  Future<String> run_command(String command) async {
+    //TODO
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
+    final timestampStr = timestamp.substring(0, timestamp.length - 2);
+
+    if(timestampStr != vcn_number_time){
+      vcn_uses = 0;
+      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 2);
+    }
+    else{
+      vcn_uses += 1;
+    }
+
+    String hashString = md5.convert(utf8.encode(now_drive_password!+timestampStr)).toString().toUpperCase();
+
+    String vc_number ="00";
+
+    //匹配vcn_uses
+    switch (vcn_uses){
+      case 0:
+        vc_number = "00";
+        break;
+      case 1:
+        vc_number = "01";
+        break;
+      case 2:
+        vc_number = "02";
+        break;
+      case 3:
+        vc_number = "03";
+        break;
+      case 4:
+        vc_number = "04";
+        break;
+      case 5:
+        vc_number = "05";
+        break;
+      case 6:
+        vc_number = "06";
+        break;
+      default:
+        vc_number = "0000";
+        break;
+    }
+
+  String verification_code = md5.convert(utf8.encode(now_drive_password!+timestampStr+vc_number)).toString().toUpperCase();
+    final response = await http.get(
+      Uri.parse('http://$ip:42309/run_cmd?hash=${hashString}&verification-code=$verification_code&command=$command'),
+      headers: {'User-Agent': 'Kooly'},
+    ).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        throw TimeoutException('Request timed out');
+      },
+    );
+    if (response.statusCode == 200) {
+      //获取请求体里面的字段
+      var responseBody = json.decode(response.body);
+      //aiApiInfo.api_key = responseBody['key']; TODO
+    }
+    else if(response.statusCode == 401){
+    }
+    else {
+    }
+    return ""; //TODO
+  }
   Future<void> send_message(String url,String key,String question,String port) async {
     is_asking = true;
     final client = http.Client();
@@ -286,8 +352,20 @@ class _ChatPageState extends State<ChatPage> {
       }
     } finally {
       client.close();
+      is_asking = false;
+      String comm="";
+      //如果ai_answer以"c["开头，且有"]"
+      if(ai_answer.startsWith("c[")){
+        if(ai_answer.contains("]")){
+          //将c[]中间的内容赋值
+          comm = ai_answer.substring(2,ai_answer.indexOf("]"));
+          // 替换ai_answer
+          ai_answer.replaceAll(comm, "正在执行命令："+comm);
+          //TODO : 执行命令
+        }
+      }
       setState(() {
-        is_asking = false;
+        
       });
     }
 }
@@ -364,7 +442,6 @@ class _ChatPageState extends State<ChatPage> {
                 });
                 return;
               }
-              print("key:"+aiApiInfo.api_key! + "\nurl:"+aiApiInfo.api_url! + "\n");
               if ((aiApiInfo.api_url?.isNotEmpty ?? false) && 
                   (aiApiInfo.api_key?.isNotEmpty ?? false)) {
                 ai_answer = "";
@@ -376,7 +453,7 @@ class _ChatPageState extends State<ChatPage> {
                   "你是一个叫做Kooly的智能助手"
                 );
                 setState(() {
-                  //_messageController.text = "";
+                  //_messageController.text = ""; // 清空输入框
                 });
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -559,7 +636,6 @@ class _SearchPageState extends State<SearchPage> {
                     actions: [
                       TextButton(
                         onPressed: () {
-                          //TODO 取消
                           Navigator.of(context).pop();
                         },
                         child: const Text('取消'),
@@ -633,7 +709,6 @@ class DriveItem extends StatelessWidget {
   const DriveItem({super.key, required this.ip, required this.name, required this.on_connect});
 
   Future<int> connect(String password) async {
-    // 连接设备 TODO
     now_drive_ip = ip;
     now_drive_name = name;
     now_drive_password = password;
@@ -691,13 +766,11 @@ class DriveItem extends StatelessWidget {
         throw TimeoutException('Request timed out');
       },
     );
-    print(response.statusCode);
     if (response.statusCode == 200) {
       //获取请求体里面的url和key字段
       var responseBody = json.decode(response.body);
       aiApiInfo.api_key = responseBody['key'];
       aiApiInfo.api_url = responseBody['url'];
-      print("原始响应: ${response.body}"); // 添加在解析前
     }
     else if(response.statusCode == 401){
     }
