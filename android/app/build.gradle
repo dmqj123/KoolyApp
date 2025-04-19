@@ -25,8 +25,9 @@ if (flutterVersionName == null) {
 
 android {
     namespace = "com.example.kooly_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
+    buildToolsVersion = "35.0.1"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
