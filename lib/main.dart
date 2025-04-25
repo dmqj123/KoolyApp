@@ -229,6 +229,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   bool is_asking = false;
+  /*
   Future<String> run_command(String command) async {
     //TODO
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
@@ -294,7 +295,7 @@ class _ChatPageState extends State<ChatPage> {
     else {
     }
     return ""; //TODO
-  }
+  }*/
   Future<void> send_message(String url,String key,String question,String port) async {
     is_asking = true;
     final client = http.Client();
@@ -550,8 +551,8 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> SearchDrive() async {
   is_searching = true; // 设置为正在搜索
   driveItems.clear(); // 清空设备列表
-  for (int x = 1; x <= 10; x++) {
-    for (search_y = 1; search_y <= 18; search_y++) {
+  for (int x = 1; x <= 6; x++) {
+    for (search_y = 1; search_y <= 20; search_y++) {
       String ip = '192.168.$x.$search_y';
       try {
         print('Checking $ip...');
