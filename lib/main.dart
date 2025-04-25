@@ -23,16 +23,16 @@ class AiApiInfo {
   String ?api_url;
 }
 
-String vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 2);
+String vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 3);
 int vcn_uses = 0; //校验码使用情况
 
 Future<bool> checkpassword(String password, String ip) async {
   final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
-  final timestampStr = timestamp.substring(0, timestamp.length - 2);
+  final timestampStr = timestamp.substring(0, timestamp.length - 3);
 
   if(timestampStr != vcn_number_time){
     vcn_uses = 0;
-    vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 2);
+    vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 3);
   }
   else{
     vcn_uses += 1;
@@ -77,7 +77,7 @@ Future<bool> checkpassword(String password, String ip) async {
       Uri.parse('http://$ip:42309/checkpassword?hash=$hashString&verification-code=$verification_code'),
       headers: {'User-Agent': 'Kooly'},
     ).timeout(
-      const Duration(seconds: 5),
+      const Duration(seconds: 6),
       onTimeout: () {
         throw TimeoutException('Request timed out');
       },
@@ -233,11 +233,11 @@ class _ChatPageState extends State<ChatPage> {
   Future<String> run_command(String command) async {
     //TODO
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
-    final timestampStr = timestamp.substring(0, timestamp.length - 2);
+    final timestampStr = timestamp.substring(0, timestamp.length - 3);
 
     if(timestampStr != vcn_number_time){
       vcn_uses = 0;
-      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 2);
+      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 3);
     }
     else{
       vcn_uses += 1;
@@ -548,11 +548,16 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Future<void> SearchDrive() async {
+  Future<void> SearchDevice() async {
   is_searching = true; // 设置为正在搜索
   driveItems.clear(); // 清空设备列表
-  for (int x = 1; x <= 6; x++) {
-    for (search_y = 1; search_y <= 20; search_y++) {
+  for (int x = 1; x <= 5; x++) {
+    for (search_y = 1; search_y <= 256; search_y++) {
+      if(search_y==21){
+        if(x!=3){
+          break;
+        }
+      }
       String ip = '192.168.$x.$search_y';
       try {
         print('Checking $ip...');
@@ -601,7 +606,7 @@ class _SearchPageState extends State<SearchPage> {
   void initState() {
     super.initState();
     driveItemsStream.add(driveItems);
-    SearchDrive();
+    SearchDevice();
   }
 
   @override
@@ -661,7 +666,7 @@ class _SearchPageState extends State<SearchPage> {
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () {
-              if(!is_searching){SearchDrive();}else{search_y = 0;}
+              if(!is_searching){SearchDevice();}else{search_y = 0;}
               setState(() {
                 is_searching = true; // 设置为正在搜索
               });
@@ -715,11 +720,11 @@ class DriveItem extends StatelessWidget {
     now_drive_password = password;
 
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
-    final timestampStr = timestamp.substring(0, timestamp.length - 2);
+    final timestampStr = timestamp.substring(0, timestamp.length - 3);
 
     if(timestampStr != vcn_number_time){
       vcn_uses = 0;
-      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 2);
+      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 3);
     }
     else{
       vcn_uses += 1;
@@ -762,7 +767,7 @@ class DriveItem extends StatelessWidget {
       Uri.parse('http://$ip:42309/get_apiinfo?hash=${hashString}&verification-code=$verification_code'),
       headers: {'User-Agent': 'Kooly'},
     ).timeout(
-      const Duration(seconds: 5),
+      const Duration(seconds: 6),
       onTimeout: () {
         throw TimeoutException('Request timed out');
       },
