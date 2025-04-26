@@ -278,7 +278,6 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   bool is_asking = false;
-  /*
   Future<String> run_command(String command) async {
     //TODO
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
@@ -324,27 +323,35 @@ class _ChatPageState extends State<ChatPage> {
         break;
     }
 
-  String verification_code = md5.convert(utf8.encode(now_drive_password!+timestampStr+vc_number)).toString().toUpperCase();
+    String verification_code = md5.convert(utf8.encode(now_drive_password!+timestampStr+vc_number)).toString().toUpperCase();
     final response = await http.get(
-      Uri.parse('http://$ip:42309/run_cmd?hash=${hashString}&verification-code=$verification_code&command=$command'),
+      Uri.parse('http://$now_drive_ip:42309/run_cmd?hash=${hashString}&verification-code=$verification_code&command=$command'),
       headers: {'User-Agent': 'Kooly'},
     ).timeout(
-      const Duration(seconds: 5),
+      const Duration(seconds: 10),
       onTimeout: () {
         throw TimeoutException('Request timed out');
       },
     );
+    String result = "";
     if (response.statusCode == 200) {
       //获取请求体里面的字段
-      var responseBody = json.decode(response.body);
-      //aiApiInfo.api_key = responseBody['key']; TODO
+      print("body:"+utf8.decode(response.bodyBytes));
+      var responseBody = json.decode(utf8.decode(response.bodyBytes)); //TODO BUG 服务端多行的数据识别错误
+      
+      if(responseBody['success']=="true"){
+        result = responseBody['result'];
+      }
+      else{
+        result = responseBody["执行错误:"+'message'];
+      }
     }
     else if(response.statusCode == 401){
     }
     else {
     }
-    return ""; //TODO
-  }*/
+    return result; //TODO
+  }
   Future<void> send_message(String url,String key,String question,String port) async {
     is_asking = true;
     final client = http.Client();
@@ -412,6 +419,7 @@ class _ChatPageState extends State<ChatPage> {
           // 替换ai_answer
           ai_answer.replaceAll(comm, "正在执行命令："+comm);
           //TODO : 执行命令
+          run_command(comm);
         }
       }
       setState(() {
@@ -723,7 +731,9 @@ class _SearchPageState extends State<SearchPage> {
             }
           ),
           IconButton(
-            onPressed: (){}, icon: Icon(Icons.qr_code_scanner), // 扫描二维码
+            onPressed: (){
+              // 扫描二维码
+            }, icon: Icon(Icons.qr_code_scanner), // 扫描二维码
           ),
         ],
       ),
