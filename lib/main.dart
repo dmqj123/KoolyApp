@@ -530,6 +530,7 @@ class _ChatPageState extends State<ChatPage> {
 }
 
 int search_y = 0;
+int search_x = 0;
 
 class SearchPage extends StatefulWidget {
   @override
@@ -600,14 +601,14 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> SearchDevice() async {
   is_searching = true; // 设置为正在搜索
   driveItems.clear(); // 清空设备列表
-  for (int x = 1; x <= 5; x++) {
+  for (search_x = 1; search_x <= 5; search_x++) {
     for (search_y = 1; search_y <= 256; search_y++) {
       if(search_y==21){
-        if(x!=3){
+        if(search_x!=3){
           break;
         }
       }
-      String ip = '192.168.$x.$search_y';
+      String ip = '192.168.$search_x.$search_y';
       try {
         print('Checking $ip...');
         final response = await http.get(
@@ -715,7 +716,7 @@ class _SearchPageState extends State<SearchPage> {
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () {
-              if(!is_searching){SearchDevice();}else{search_y = 0;}
+              if(!is_searching){SearchDevice();}else{search_y = 0;search_x = 0;} // 刷新设备列表
               setState(() {
                 is_searching = true; // 设置为正在搜索
               });
