@@ -5,6 +5,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+int Communication_protocol_compatible_version = 1;
+
 void main(){
   runApp(const MyApp());
 }
@@ -204,6 +206,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  MaterialColor _selectedColor = Colors.blue;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -211,11 +215,56 @@ class _SettingsPageState extends State<SettingsPage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text("设置"),
       ),
-      body: Center(
-        child: Text(
-          '设置页面',
-          style: TextStyle(fontSize: 24),
-        ),
+      body: Column(
+        children: [
+          SizedBox(height: 15),
+          Row(
+            children: [
+              Text("主题色：",style: TextStyle(fontSize: 35),),
+              DropdownButton<MaterialColor>(
+                borderRadius: BorderRadius.circular(10),
+                value: _selectedColor,
+                onChanged: (color) => setState(() => _selectedColor = color!),
+                items: [
+                  DropdownMenuItem(
+                    value: Colors.blue,
+                    child: Row(children: [
+                      Container(width: 20, height: 20, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      const Text('蓝色'),
+                    ]),
+                  ),
+                  DropdownMenuItem(
+                    value: Colors.pink,
+                    child: Row(children: [
+                      Container(width: 20, height: 20, color: Colors.pink),
+                      const SizedBox(width: 8),
+                      const Text('粉色'),
+                    ]),
+                  ),
+                ],
+              )
+            ],
+          ),
+          SizedBox(height: 15),
+          Row(
+            children: [
+              Text("端口：",style: TextStyle(fontSize: 35),),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.only(right: 20), // 设置右边距为10
+                child: TextField(
+                  controller: TextEditingController(),
+                  decoration: InputDecoration(
+                    hintText: '请输入端口',
+                    border: OutlineInputBorder(),
+                    filled: true, // 启用填充
+                    fillColor: Colors.grey[200], // 设置填充颜色
+                  ),
+                ),
+              ),)
+            ],
+          ),
+        ],
       ),
     );
   }
