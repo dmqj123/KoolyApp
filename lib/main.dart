@@ -5,13 +5,20 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-int Communication_protocol_compatible_version = 1;
+int Communication_protocol_compatible_version = 1; //通信协议兼容版本
 
 void main(){
   runApp(const MyApp());
 }
 
 String ai_answer = "";
+
+List<String> ports = [
+  "你是一个叫Kooly的智能助手",
+  "你是一个名为Kooly的智能助手,专注于简洁地回答用户问题。需要帮助用户执行任务时,在回答前使用'c[命令]'格式提供需执行的cmd命令,以协助完成任务。每次回答仅含一个'c[命令]',但此命令内可包含多个用&&连接的命令。用户提问直接转化为操作或查询。若命令有返回,系统将开启新对话告知你结果,以便继续指导或操作", //高级模式
+  "你是一名简洁回答的智能助手Kooly。需要时在回答开头使用'c[命令]'使用户的电脑执行cmd指令,多个命令用'&&'连接。仅在必要时使用一条开头的命令,不必告知用户具体执行过程。对于单纯提问,直接回答即可", //普通模式
+  "你是一个名为Kooly的智能助手,专注于回答用户问题。需要帮助用户执行任务时,在回答前使用'c[命令]'格式提供需执行的cmd命令,以协助完成任务。每次回答仅含一个'c[命令]',但此命令内可包含多个用&&连接的命令。用户提问直接转化为操作或查询。若命令有返回,系统将开启新对话告知你结果,以便继续指导或操作\n" //有命令返回
+];
 
 String ?now_drive_ip;
 String ?now_drive_name;
@@ -21,6 +28,7 @@ int now_drive_port = 42309;
 AiApiInfo aiApiInfo = AiApiInfo();
 
 class AiApiInfo {
+  String model_name = "deepseek-chat";
   String ?api_key;
   String ?api_url;
 }
@@ -278,8 +286,20 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   bool is_asking = false;
+  Future<void> ask(String _question,String _p) async {
+    send_message(
+      aiApiInfo.api_url!,
+      aiApiInfo.api_key!,
+      _question,
+      _p
+    );
+  }
   Future<String> run_command(String command) async {
-    //TODO
+
+    // 替换ai_answer
+    ai_answer.replaceAll(command, "正在执行命令："+command);
+    setState(() {});
+          
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
     final timestampStr = timestamp.substring(0, timestamp.length - 4);
 
@@ -359,14 +379,14 @@ class _ChatPageState extends State<ChatPage> {
     }
     else {
     }
-    return result; //TODO
+    return result;
   }
   Future<void> send_message(String url,String key,String question,String port) async {
     is_asking = true;
     final client = http.Client();
     try {
       final requestBody = {
-        "model": "deepseek-chat",
+        "model": aiApiInfo.model_name,
         "messages": [
           {"role": "user", "content": question},
           {"role": "system", "content": port}
@@ -425,10 +445,17 @@ class _ChatPageState extends State<ChatPage> {
         if(ai_answer.contains("]")){
           //将c[]中间的内容赋值
           comm = ai_answer.substring(2,ai_answer.indexOf("]"));
-          // 替换ai_answer
-          ai_answer.replaceAll(comm, "正在执行命令："+comm);
-          //TODO : 执行命令
-          run_command(comm);
+
+          String result = await run_command(comm);
+
+          if(!result.isEmpty){
+            ask("请继续",ports[3]+"用户上次的提问："+question+"\n"+"你上次的回答："+ai_answer+"\n"+"指令执行结果："+result);
+          }
+          else{
+            // 替换ai_answer
+            ai_answer.replaceAll(comm, "命令执行完毕："+comm);
+            setState(() {});
+          }
         }
       }
       setState(() {
@@ -513,12 +540,7 @@ class _ChatPageState extends State<ChatPage> {
                   (aiApiInfo.api_key?.isNotEmpty ?? false)) {
                 ai_answer = "";
                 is_asking = true;
-                send_message(
-                  aiApiInfo.api_url!,
-                  aiApiInfo.api_key!,
-                  _messageController.text,
-                  "你是一个叫做Kooly的智能助手"
-                );
+                ask(_messageController.text, ports[2]);
                 setState(() {
                   //_messageController.text = ""; // 清空输入框
                 });
