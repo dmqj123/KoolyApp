@@ -25,16 +25,16 @@ class AiApiInfo {
   String ?api_url;
 }
 
-String vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 3);
+String vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 4);
 int vcn_uses = 0; //校验码使用情况
 
 Future<bool> checkpassword(String password, String ip) async {
   final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
-  final timestampStr = timestamp.substring(0, timestamp.length - 3);
+  final timestampStr = timestamp.substring(0, timestamp.length - 4);
 
   if(timestampStr != vcn_number_time){
     vcn_uses = 0;
-    vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 3);
+    vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 4);
   }
   else{
     vcn_uses += 1;
@@ -281,11 +281,11 @@ class _ChatPageState extends State<ChatPage> {
   Future<String> run_command(String command) async {
     //TODO
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
-    final timestampStr = timestamp.substring(0, timestamp.length - 3);
+    final timestampStr = timestamp.substring(0, timestamp.length - 4);
 
     if(timestampStr != vcn_number_time){
       vcn_uses = 0;
-      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 3);
+      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 4);
     }
     else{
       vcn_uses += 1;
@@ -336,9 +336,18 @@ class _ChatPageState extends State<ChatPage> {
     String result = "";
     if (response.statusCode == 200) {
       //获取请求体里面的字段
-      print("body:"+utf8.decode(response.bodyBytes));
-      var responseBody = json.decode(utf8.decode(response.bodyBytes)); //TODO BUG 服务端多行的数据识别错误
-      
+      // 声明响应体变量
+      var responseBody;
+      // 清理响应内容中的换行符、回车符和制表符
+      String cleanedBody = response.body.replaceAll(RegExp(r'[\n\r\t]'), '');
+      try {
+        // 尝试解析清理后的JSON字符串
+        responseBody = json.decode(cleanedBody);
+      } catch (e) {
+        // 如果解析失败,打印错误信息并返回错误提示
+        print('JSON解析错误: $e');
+        return '解析响应失败';
+      }
       if(responseBody['success']=="true"){
         result = responseBody['result'];
       }
@@ -780,11 +789,11 @@ class DriveItem extends StatelessWidget {
     now_drive_password = password;
 
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString(); // 输出 13位
-    final timestampStr = timestamp.substring(0, timestamp.length - 3);
+    final timestampStr = timestamp.substring(0, timestamp.length - 4);
 
     if(timestampStr != vcn_number_time){
       vcn_uses = 0;
-      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 3);
+      vcn_number_time = DateTime.now().millisecondsSinceEpoch.toString().substring(0, DateTime.now().millisecondsSinceEpoch.toString().length - 4);
     }
     else{
       vcn_uses += 1;
