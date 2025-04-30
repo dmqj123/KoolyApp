@@ -449,6 +449,8 @@ class _ChatPageState extends State<ChatPage> {
           String result = await run_command(comm);
 
           if(!result.isEmpty){
+            comm = "";
+            ai_answer = "";
             ask("请继续",ports[3]+"用户上次的提问："+question+"\n"+"你上次的回答："+ai_answer+"\n"+"指令执行结果："+result);
           }
           else{
