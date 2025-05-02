@@ -4,4 +4,4 @@ Kooly 's phone app to connect to kooly desktop pet.It can help you to control yo
 ## Getting Started
 Click there to install the computer pet app.
 [KoolyApp](
-[KoolyApp](kooly.faistudio.top/download))
+[KoolyApp](kooly.faistudio.top/app))
