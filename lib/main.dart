@@ -691,7 +691,7 @@ class _SearchPageState extends State<SearchPage> {
         color: isConnected ? Colors.blue[50] : Colors.white,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2)),
+          BoxShadow(color: const Color(0x339E9E9E), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2)),
         ],
       ),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -1221,7 +1221,7 @@ class _ChatPageState extends State<ChatPage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
-                  BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, -1)),
+                  BoxShadow(color: const Color(0x339E9E9E), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, -1)),
                 ],
               ),
               child: SafeArea(
@@ -1583,7 +1583,7 @@ class DriveItem extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withValues(alpha: 0.2), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2)),
+          BoxShadow(color: const Color(0x339E9E9E), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2)),
         ],
       ),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
