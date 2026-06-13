@@ -16,8 +16,14 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
   http: ^1.3.0
-  flutter_native_splash: ^2.4.1
-  shared_preferences: ^2.2.2
+  flutter_native_splash: 
+    git:
+      url: https://gitcode.com/CPF-Flutter/fluttertpc_flutter_native_splash.git
+
+  shared_preferences:
+    git:
+      url: "https://gitee.com/openharmony-sig/flutter_packages.git"
+      path: "packages/shared_preferences/shared_preferences"
 
 dev_dependencies:
   flutter_test:
